@@ -7,7 +7,7 @@ ROOT = os.path.abspath(".")
 SITE = os.path.join(ROOT, "docs")
 
 # אחרי שתיפתח החשבון ב-GitHub, צריך להחליף את הכתובת הזאת
-REPO_URL = "https://github.com/levmelah-ship-it/python-games/blob/main"
+REPO_URL = "https://github.com/levmelah/python-games/blob/main"
 
 ENGINE_NOTE = {
     "ursina": "ursina (3D)",

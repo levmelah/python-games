@@ -14,7 +14,7 @@ sh tools/deploy.sh bowling-2 "fixed score"  # with your own commit message
 
 `deploy.sh` does the whole trip: rebuild -> `git commit` -> `git push`. GitHub
 Pages then redraws the site at
-<https://levmelah-ship-it.github.io/python-games/> within a minute or two.
+<https://levmelah.github.io/python-games/> within a minute or two.
 If the page still shows the old version, reload without cache (Ctrl+Shift+R).
 
 To rebuild without publishing:
@@ -41,7 +41,7 @@ steps of `deploy.sh`:
 git add -A && git commit -m "update games" && git push
 ```
 
-The site is at <https://levmelah-ship-it.github.io/python-games/> once GitHub
+The site is at <https://levmelah.github.io/python-games/> once GitHub
 Pages is pointed at branch `main`, folder `/docs`
 (repository Settings -> Pages).
 

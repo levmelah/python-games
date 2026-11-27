@@ -5,7 +5,7 @@
 #   sh tools/deploy.sh bowling-2       # רק משחק אחד, הרבה יותר מהר
 #   sh tools/deploy.sh bowling-2 "תיקון הניקוד"     # עם הודעת commit משלך
 #
-# האתר: https://levmelah-ship-it.github.io/python-games/
+# האתר: https://levmelah.github.io/python-games/
 
 set -e
 cd "$(dirname "$0")/.."
@@ -39,7 +39,7 @@ cat <<'MSG2'
 
 --- הועלה.
 האתר מתעדכן תוך דקה-שתיים:
-    https://levmelah-ship-it.github.io/python-games/
+    https://levmelah.github.io/python-games/
 
 אם הדף מראה גרסה ישנה - Ctrl+Shift+R (רענון בלי cache).
 MSG2
