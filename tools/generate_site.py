@@ -86,7 +86,7 @@ PAGE = '''<!doctype html>
 <style>
   :root {
     --bg: #0f1117; --panel: #171a23; --line: #262b38;
-    --text: #e8eaf0; --dim: #959cb0; --accent: #6ea8fe;
+    --text: #e8eaf0; --dim: #959cb0; --accent: #7bc96f;
   }
   * { box-sizing: border-box; }
   body {

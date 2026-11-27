@@ -3,21 +3,25 @@
 #   make deploy                                  # all games (slow)
 #   make deploy GAME=bowling-2                   # just one, much faster
 #   make deploy GAME=bowling-2 MSG="fixed score" # with your own commit message
+#   make deploy-site                             # only the site layout, fast
 #   make rebuild GAME=bowling-2                  # rebuild only, no push
 #   make serve                                   # test locally on 127.0.0.1:8222
 #
 # The site: https://levmelah.github.io/python-games/
 
-.PHONY: deploy rebuild stage build publish site serve help
+.PHONY: deploy deploy-site rebuild stage build publish site serve help
 
 GAME ?=
 MSG ?=
 
 help:
-	@sed -n "2,9p" Makefile | sed "s/^#\\s\\?//"
+	@sed -n "2,10p" Makefile | sed "s/^#\\s\\?//"
 
 deploy:
 	sh tools/deploy.sh $(GAME) $(if $(MSG),"$(MSG)",)
+
+deploy-site:
+	sh tools/deploy_site.sh $(if $(MSG),"$(MSG)",)
 
 rebuild:
 	sh tools/rebuild.sh $(GAME)

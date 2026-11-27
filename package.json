@@ -10,6 +10,7 @@
   },
   "scripts": {
     "deploy": "sh tools/deploy.sh",
+    "deploy:site": "sh tools/deploy_site.sh",
     "rebuild": "sh tools/rebuild.sh",
     "stage": "python3 tools/stage.py",
     "build": "sh tools/build_all.sh",

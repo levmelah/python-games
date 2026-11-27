@@ -63,7 +63,8 @@ Pages is pointed at branch `main`, folder `/docs`
 | --- | --- |
 | `convert.py` | Rewrites one game for the browser. Finds the main loop (the `while` holding `pygame.event.get`), puts `await asyncio.sleep(0)` at the top of it, turns every function on the call path into `async def`, adds the matching `await`s, wraps the entry point in `asyncio.run`, and installs a fallback font because a browser has no system fonts. The original game file is never touched. |
 | `stage.py` | Runs `convert.py` over every game in `manifest.tsv` and copies the images each one needs. |
-| `publish.py` | Copies each finished build into `docs/<slug>/` and writes `playable.txt`. |
+| `publish.py` | Copies each finished build into `docs/<slug>/` and writes `playable.txt`. Then calls `add_back_button.py`. |
+| `add_back_button.py` | Adds the "&larr; All games" link (top-left, `href="../"`) to every `docs/<slug>/index.html`, because pygbag's own page has no way back to the list. Runs again on every build and skips pages that already have it. |
 | `generate_site.py` | Writes `docs/index.html` from `manifest.tsv`, `playable.txt` and `native.tsv`. |
 | `rebuild.sh` | Runs the four scripts above in order. |
 | `deploy.sh` | Runs `rebuild.sh`, then commits and pushes to GitHub. |

@@ -2,6 +2,9 @@
 """מעתיק את תוצאות הבנייה של כל משחק לתוך docs/ - התיקייה ש-GitHub Pages מגישה."""
 import os, shutil, sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import add_back_button
+
 ROOT = os.path.abspath(".")          # .../game
 WEB = os.path.join(ROOT, "web")
 DOCS = os.path.join(ROOT, "docs")
@@ -21,4 +24,7 @@ os.makedirs(DOCS, exist_ok=True)
 open(os.path.join(DOCS, ".nojekyll"), "w").close()
 open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "playable.txt"),
      "w", encoding="utf-8").write("\n".join(slugs) + "\n")
+
+# דפי pygbag נוצרים בלי כפתור חזרה, ולכן מוסיפים אותו כאן בכל בנייה
+add_back_button.main(DOCS)
 print("הועתקו ל-docs/: %d משחקים" % len(slugs))
