@@ -17,6 +17,18 @@ Pages then redraws the site at
 <https://levmelah.github.io/python-games/> within a minute or two.
 If the page still shows the old version, reload without cache (Ctrl+Shift+R).
 
+The same thing through `make` (works out of the box) or `npm` (needs
+`sudo apt install npm` first):
+
+```bash
+make deploy                                   npm run deploy
+make deploy GAME=bowling-2                    npm run deploy -- bowling-2
+make deploy GAME=bowling-2 MSG="fixed score"  npm run deploy -- bowling-2 "fixed score"
+make rebuild GAME=bowling-2                   npm run rebuild -- bowling-2
+make serve                                    npm run serve
+make help
+```
+
 To rebuild without publishing:
 
 ```bash
