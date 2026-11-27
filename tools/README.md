@@ -29,6 +29,21 @@ make serve                                    npm run serve
 make help
 ```
 
+## Changing only the look of the home page
+
+The layout and CSS live in the `PAGE` template at the bottom of
+`tools/generate_site.py`. **Do not edit `docs/index.html`** — it is generated
+and gets overwritten. Edit the template, then:
+
+```bash
+sh tools/deploy_site.sh "bigger cards"    # or
+npm run deploy:site -- "bigger cards"     # or
+make deploy-site MSG="bigger cards"
+```
+
+That skips pygbag entirely: about 6 seconds instead of minutes, because no game
+is rebuilt. Use it whenever you touched the site but no game.
+
 To rebuild without publishing:
 
 ```bash
