@@ -1,0 +1,55 @@
+# מפת כפתורי מגע לכל משחק - נקרא על ידי tools/touch_controls.py
+# slug <TAB> pad <TAB> actions
+#   pad     = arrows4 | arrows_lr | arrows_ud | none
+#   actions = Label=Key מופרדים ב-|   (Key: Up Down Left Right Space Enter Esc Shift Tab Backspace a-z 0-9 F1 F5 F11)
+abandoned-compound-cameras	arrows4	Use=e|Run=Shift|Act=Space|Menu=Esc
+abandoned-compound-creepy	arrows4	Use=e|Run=Shift|Act=Space|Menu=Esc
+abandoned-compound-english	arrows4	Use=e|Run=Shift|Act=Space|Menu=Esc
+abandoned-compound-ending	arrows4	Use=e|Run=Shift|Act=Space|Menu=Esc
+alien-invasion	arrows_lr	Fire=Space|Pause=p
+time-moves-when-you-move	arrows4	OK=Enter|Run=Shift|Menu=Esc
+captain-vertical	none	Jump=Up|Act=Space|OK=Enter|Music=m|Story=s
+smoldering-root	arrows4	Act=Space|Z=z|X=x|C=c
+diving-cat	arrows4	Act=Space|L=l|OK=Enter
+arkanoid	arrows_lr	Launch=Space|Up=Up
+garten-of-banban-2	arrows4	Use=e|Act=Space|Reset=r|1=1|2=2
+garten-of-banban-3d	arrows4	Act=Space|Reset=r|Menu=Esc
+garten-of-banban	arrows4	I=i|J=j|K=k|L=l|Reset=r|Tab=Tab
+level-devil-god-mode	arrows_lr	Jump=Up|Act=Space|Reset=r
+bounce-ball	none	Jump=Space|Up=Up|Menu=Esc
+marble-run-3d	none	Jump=Space|Up=Up|Menu=Esc
+bowling-2	arrows4	Throw=Space|J=j|Reset=r
+bowling	arrows4	Throw=Space|J=j|Reset=r
+cockpit-racer-2	arrows4	Q=q|Reset=r|Menu=Esc
+cockpit-racer	arrows4	Q=q|Reset=r|Menu=Esc
+count-control-3d	arrows_lr	Menu=Esc
+count-control	arrows_lr	Menu=Esc
+level-devil-ultimate	arrows_lr	Jump=Up|Act=Space
+doodle-war-2	none	Act=Space|OK=Enter|Tab=Tab|B=b|C=c|S=s
+doodle-war	none	Act=Space|Tab=Tab|B=b|C=c|S=s
+football	arrows4	OK=Enter|Reset=r
+geometry-dash	none	Jump=Space|Up=Up|Reset=r
+guns-guns-guns	arrows_lr	Fire=Space|Reload=r|Pause=p
+hide-and-paint	arrows4	Reset=r
+night-shift-3d	arrows4	Light=f|Act=Space|Run=Shift|OK=Enter
+im-not-a-robot	none	OK=Enter|Del=Backspace|Menu=Esc
+mini-mario-cat	arrows4	Jump=Space|Reset=r
+mini-mario-cat-animated	arrows4	Jump=Space|Reset=r
+mini-mario	arrows_lr	Jump=Up|Act=Space|Reset=r
+minecraft-sandbox	arrows4	Jump=Space|Use=e|F=f|G=g|1=1|2=2|3=3
+morph-balls	arrows_lr	Jump=Up|Act=Space|1=1|2=2|3=3|Pause=p
+pacman	arrows4	Reset=r
+planet-destruction	none	Menu=Esc|F5=F5
+platform-adventure	arrows4	Jump=Space|Reset=r|M=m|N=n
+cat-coins	arrows_lr	Jump=Up|Act=Space|Q=q|Reset=r
+poppy-playtime-3d	arrows4	Act=Space|Reset=r|OK=Enter
+slime-lab	arrows_lr	Jump=Up|Act=Space|Reset=r|OK=Enter
+soldier-vs-orcs	arrows4	Attack=Space|F=f
+tamagotchi	none	1=1|2=2|3=3|4=4|5=5|Feed=f|Music=m|Sleep=s
+the-hollow-2	arrows4	Use=e|Light=f|Act=Space|Run=Shift
+the-hollow	arrows4	Use=e|Light=f|Act=Space|Run=Shift|C=c
+bomberman	arrows4	Bomb=Space|Reset=r|OK=Enter|1=1|2=2
+dungeon-roguelike	arrows4	Act=Space|F=f|Map=m|Reset=r
+cursor-camp	none	Menu=Esc
+space-subtraction	arrows_lr	Act=Space|OK=Enter
+infinite-neon-background	arrows_ud	1=1|2=2|3=3|C=c|F=f|H=h|M=m
