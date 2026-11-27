@@ -2,7 +2,22 @@
 
 Editing a game does **not** change its browser version. The games under
 `web/` and the site under `docs/` are generated copies, so after changing a
-game you have to rebuild:
+game you have to rebuild.
+
+## The one command you normally want
+
+```bash
+sh tools/deploy.sh                          # all games
+sh tools/deploy.sh bowling-2                # just one, much faster
+sh tools/deploy.sh bowling-2 "fixed score"  # with your own commit message
+```
+
+`deploy.sh` does the whole trip: rebuild -> `git commit` -> `git push`. GitHub
+Pages then redraws the site at
+<https://levmelah-ship-it.github.io/python-games/> within a minute or two.
+If the page still shows the old version, reload without cache (Ctrl+Shift+R).
+
+To rebuild without publishing:
 
 ```bash
 sh tools/rebuild.sh              # all games
@@ -19,7 +34,8 @@ python3 tools/generate_site.py  # docs/index.html
 ```
 
 `docs/` is what GitHub Pages serves. Everything else is regenerated, which is
-why `web/` and `build/` are in `.gitignore`. Then publish:
+why `web/` and `build/` are in `.gitignore`. Publishing by hand is the last two
+steps of `deploy.sh`:
 
 ```bash
 git add -A && git commit -m "update games" && git push
@@ -37,6 +53,8 @@ Pages is pointed at branch `main`, folder `/docs`
 | `stage.py` | Runs `convert.py` over every game in `manifest.tsv` and copies the images each one needs. |
 | `publish.py` | Copies each finished build into `docs/<slug>/` and writes `playable.txt`. |
 | `generate_site.py` | Writes `docs/index.html` from `manifest.tsv`, `playable.txt` and `native.tsv`. |
+| `rebuild.sh` | Runs the four scripts above in order. |
+| `deploy.sh` | Runs `rebuild.sh`, then commits and pushes to GitHub. |
 
 ## The two tables
 
