@@ -1,0 +1,37 @@
+# Python environments (installed libraries, very large)
+.venv/
+.venv-bpy/
+.venv-1/
+venv/
+
+# Python temporary files
+__pycache__/
+*.pyc
+
+# Built programs (PyInstaller)
+dist/
+build/
+my_games/
+*.spec
+
+# Generated sound cache (games create it again)
+.horror_audio_cache/
+
+# Someone else's project (downloaded from GitHub)
+PyPacman-main/
+
+# Logs
+*.log
+
+# Saves and high scores (personal, created while playing)
+pycraft_saves/
+*highscore*
+*high_score*
+*_save.json
+world_save.json
+
+# Editor settings
+.vscode/
+
+# Browser versions of the games: generated from tools/, rebuilt with one command
+web/

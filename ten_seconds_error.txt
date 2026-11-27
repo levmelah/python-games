@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "/home/gera/Desktop/Lev python-20260411T063732Z-3-001/Lev python/game/זומבים.py", line 1292, in <module>
+    hp_lbl = Text(T('חיים', 'HEALTH'), parent=hud, position=(LBL_X, 0.442), origin=(0.5, -0.5), scale=0.95)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gera/Desktop/Lev python-20260411T063732Z-3-001/Lev python/game/.venv-bpy/lib/python3.11/site-packages/ursina/ursinastuff.py", line 230, in __call__
+    obj = type.__call__(cls, *args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gera/Desktop/Lev python-20260411T063732Z-3-001/Lev python/game/.venv-bpy/lib/python3.11/site-packages/ursina/text.py", line 34, in __init__
+    self.font = Text.default_font
+    ^^^^^^^^^
+  File "/home/gera/Desktop/Lev python-20260411T063732Z-3-001/Lev python/game/.venv-bpy/lib/python3.11/site-packages/ursina/text.py", line 235, in font
+    font = builtins.loader.loadFont(value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/gera/Desktop/Lev python-20260411T063732Z-3-001/Lev python/game/.venv-bpy/lib/python3.11/site-packages/direct/showbase/Loader.py", line 648, in loadFont
+    raise IOError(message)
+OSError: Could not load font file: DejaVuSans-Bold.ttf
