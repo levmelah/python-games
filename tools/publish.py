@@ -4,6 +4,7 @@ import os, shutil, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import add_back_button
+import touch_controls
 
 ROOT = os.path.abspath(".")          # .../game
 WEB = os.path.join(ROOT, "web")
@@ -27,4 +28,6 @@ open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "playable.txt"),
 
 # דפי pygbag נוצרים בלי כפתור חזרה, ולכן מוסיפים אותו כאן בכל בנייה
 add_back_button.main(DOCS)
+# וגם כפתורי מגע, כדי שאפשר יהיה לשחק בטלפון
+touch_controls.main(DOCS)
 print("הועתקו ל-docs/: %d משחקים" % len(slugs))
