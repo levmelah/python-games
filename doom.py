@@ -11,8 +11,10 @@ INFERNO  -  משחק יריות בגוף ראשון בסגנון Doom, ב-Python
 הרצה:   python inferno.py
 
 שליטה:
-  W A S D     - תנועה           עכבר / חצים - הסתובבות
+  W A S D     - תנועה           עכבר / חצים - הסתובבות (גם למעלה/למטה)
   Shift       - ריצה            קליק / רווח - ירייה
+  קליק ימני / J - קפיצה        PgUp/PgDn - הבטה למעלה/למטה, End - מרכוז
+  G           - גרפיקה גבוהה/נמוכה (בלום, השתקפויות, צללים, תבליט)
   1 / 2 / 3   - החלפת נשק (או Q/E, גלגלת)
   Tab         - מפה מלאה (מפה קטנה תמיד בפינה)
   R           - משחק חדש
@@ -46,6 +48,9 @@ MAX_LIGHTS = 7
 
 CAMX = (2 * (np.arange(RW) + 0.5) / RW - 1).astype(F32)
 YS = (np.arange(RH, dtype=F32) + 0.5)[None, :]
+COLS = np.arange(RW)[:, None]
+_g = np.arange(256) / 255.0
+GRADE_LUT = (np.clip(_g + (_g * _g * (3 - 2 * _g) - _g) * 0.35, 0, 1) * 255).astype(np.uint8)
 
 # ---------------------------------------------------------------- המפה
 # קירות: 1 לבנים, 2 מתכת, 3 סלע גיהנום
@@ -525,9 +530,12 @@ STR = {
     "menu_hint": ("Click a level, or use arrows + ENTER  (ESC = back)",
                   "לחץ על שלב, או חצים + ENTER  (ESC = חזרה)",
                   "Нажмите на уровень или стрелки + ENTER  (ESC = назад)"),
-    "controls": ("WASD move - Mouse aim - Click shoot - 1/2/3 or wheel: weapons - Tab map - M mute",
-                 "WASD תנועה - עכבר כיוון - קליק ירי - 1/2/3 או גלגלת: נשקים - Tab מפה - M השתקה",
-                 "WASD ход - мышь прицел - клик огонь - 1/2/3 или колесо: оружие - Tab карта - M звук"),
+    "controls": ("WASD move - Mouse look - Click shoot - Right click/J jump - 1/2/3 weapons - Tab map - G graphics - M mute",
+                 "WASD תנועה - עכבר הבטה - קליק ירי - קליק ימני/J קפיצה - 1/2/3 נשקים - Tab מפה - G גרפיקה - M השתקה",
+                 "WASD ход - мышь обзор - клик огонь - ПКМ/J прыжок - 1/2/3 оружие - Tab карта - G графика - M звук"),
+    "graphics": ("GRAPHICS", "גרפיקה", "ГРАФИКА"),
+    "high": ("HIGH", "גבוהה", "ВЫСОКАЯ"),
+    "low": ("LOW", "נמוכה", "НИЗКАЯ"),
     "language": ("LANGUAGE", "שפה", "ЯЗЫК"),
     "sound": ("SOUND", "צלילים", "ЗВУК"),
     "on": ("ON", "פועל", "ВКЛ"),
@@ -2190,8 +2198,35 @@ def build_atlas(theme="hell"):
     else:
         surfs = [tex_brick(rng), tex_tech(rng), tex_rock(rng),
                  tex_stone_floor(rng), tex_metal_floor(rng), tex_lava(rng), tex_ceiling(rng)]
-    atlas = np.stack([np.concatenate([np.clip(r, 0, 4), e], axis=2) for r, e in surfs]).astype(F32)
+    atlas = np.stack([np.concatenate([np.clip(r, 0, 4), e, bump_of(r)], axis=2) for r, e in surfs]).astype(F32)
     return atlas
+
+
+def bump_of(rgb, strength=4.5):
+    """מפת תבליט (נורמלים) מתוך בהירות הטקסטורה - לתאורה תלת-ממדית לכל פיקסל."""
+    h = np.asarray(rgb, F32).mean(axis=2)
+    h = (h * 2 + np.roll(h, 1, 0) + np.roll(h, -1, 0) + np.roll(h, 1, 1) + np.roll(h, -1, 1)) / 6
+    gu = (np.roll(h, -1, 0) - np.roll(h, 1, 0)) * strength
+    gv = (np.roll(h, -1, 1) - np.roll(h, 1, 1)) * strength
+    return np.clip(np.stack([gu, gv], -1), -1.4, 1.4).astype(F32)
+
+
+# כמה כל משטח מבריק (ברק ספקולרי): 3 קירות, 3 רצפות, תקרה
+GLOSS = {"hell": [0.25, 0.7, 0.35, 0.2, 0.6, 0.9, 0.1], "space": [0.6, 0.9, 0.5, 0.45, 0.6, 0.9, 0.3],
+         "jungle": [0.15, 0.2, 0.15, 0.1, 0.1, 0.9, 0.0], "arctic": [0.9, 0.3, 0.5, 0.35, 0.3, 1.0, 0.0],
+         "city": [0.45, 0.8, 0.5, 0.45, 0.6, 1.0, 0.0], "ocean": [0.5, 0.9, 0.6, 0.5, 0.2, 0.9, 0.4],
+         "desert": [0.15, 0.3, 0.1, 0.1, 0.35, 0.2, 0.0], "pixel": [0.7, 0.7, 0.7, 0.7, 0.8, 0.9, 0.0],
+         "candy": [0.9, 0.6, 1.0, 0.4, 0.3, 1.0, 0.0], "castle": [0.3, 0.4, 0.8, 0.35, 0.15, 0.7, 0.0],
+         "mars": [0.2, 0.7, 0.6, 0.1, 0.6, 0.8, 0.0], "shroom": [0.3, 0.9, 0.3, 0.3, 0.6, 0.8, 0.0],
+         "skyland": [0.8, 0.9, 0.3, 0.3, 0.8, 0.6, 0.0], "toyroom": [0.3, 0.8, 0.4, 0.6, 0.1, 0.9, 0.2],
+         "factory": [0.6, 0.5, 0.7, 0.3, 0.6, 0.5, 0.3], "temple": [0.6, 0.3, 0.4, 0.15, 0.5, 1.0, 0.0]}
+# השתקפות ברצפה: (רצפה רגילה, שביל, מפגע - מים/לבה/קרח)
+REFLECT = {"hell": (0.0, 0.1, 0.22), "space": (0.12, 0.05, 0.3), "jungle": (0.0, 0.0, 0.45),
+           "arctic": (0.04, 0.1, 0.5), "city": (0.12, 0.28, 0.6), "ocean": (0.1, 0.0, 0.35),
+           "desert": (0.0, 0.06, 0.0), "pixel": (0.22, 0.28, 0.3), "candy": (0.0, 0.0, 0.42),
+           "castle": (0.08, 0.1, 0.25), "mars": (0.0, 0.14, 0.3), "shroom": (0.0, 0.16, 0.32),
+           "skyland": (0.1, 0.22, 0.2), "toyroom": (0.16, 0.0, 0.28), "factory": (0.06, 0.14, 0.04),
+           "temple": (0.0, 0.18, 0.5)}
 
 
 # ======================================================================= ספרייטים מוצללים
@@ -4290,6 +4325,30 @@ class World:
                         ft[y, x] = 1
         self.FT = ft
         self.obstacles = []
+        self.AO = self.build_ao()
+
+    AO_RES = 8
+
+    def build_ao(self):
+        """מפת הצללה סביבתית (Ambient Occlusion): פינות ושולי קירות כהים יותר - נותן עומק."""
+        R = self.AO_RES
+        ys = (np.arange(self.h * R, dtype=F32) + 0.5) / R
+        xs = (np.arange(self.w * R, dtype=F32) + 0.5) / R
+        Y, X = np.meshgrid(ys, xs, indexing="ij")
+        cx, cy = X.astype(np.int32), Y.astype(np.int32)
+        wall = self.G > 0
+        dmin = np.full(X.shape, 9.0, F32)
+        for oy in (-1, 0, 1):
+            for ox in (-1, 0, 1):
+                nx = np.clip(cx + ox, 0, self.w - 1)
+                ny = np.clip(cy + oy, 0, self.h - 1)
+                ddx = np.maximum(np.maximum(nx - X, X - (nx + 1)), 0)
+                ddy = np.maximum(np.maximum(ny - Y, Y - (ny + 1)), 0)
+                d = np.sqrt(ddx * ddx + ddy * ddy)
+                dmin = np.where(wall[ny, nx], np.minimum(dmin, d), dmin)
+        e = np.clip(dmin / 0.6, 0, 1)
+        e = e * (2 - e)
+        return (0.38 + 0.62 * e).astype(F32)
 
     def wall(self, x, y):
         ix, iy = int(x), int(y)
@@ -4387,6 +4446,11 @@ class Player:
         self.mouse = 0.0             # החלקת עכבר
         self.speed_k = 0.0           # 0..1 - כמה מהר זזים (לנדנוד)
         self.barrel = 0
+        self.pitch = 0.0             # הבטה למעלה/למטה (בפיקסלים של הרינדור)
+        self.z, self.vz = 0.0, 0.0   # קפיצה
+        self.land = 0.0              # שקיעת מצלמה בנחיתה
+        self.sway_x = self.sway_y = 0.0
+        self.since_hurt = 99.0
 
 
 class Enemy:
@@ -4686,6 +4750,7 @@ class Game:
             self.f_card = pygame.font.Font(None, 26)
         self.hud_bg = self.make_hud_bg()
         self.lang, self.muted = "en", False
+        self.hq = True
         self.load_settings()
         self.show_map = False
         self.time = 0.0
@@ -4715,6 +4780,7 @@ class Game:
             if d.get("lang") in LANGS:
                 self.lang = d["lang"]
             self.muted = bool(d.get("muted", False))
+            self.hq = bool(d.get("hq", True))
         except Exception:
             pass
 
@@ -4724,7 +4790,7 @@ class Game:
         try:
             path = os.path.join(os.path.dirname(os.path.abspath(__file__)), SETTINGS_FILE)
             with open(path, "w", encoding="utf-8") as f:
-                json.dump({"lang": self.lang, "muted": self.muted}, f)
+                json.dump({"lang": self.lang, "muted": self.muted, "hq": self.hq}, f)
         except Exception:
             pass
 
@@ -4736,6 +4802,12 @@ class Game:
         self.say(f"{self.tr('sound')}: {self.tr('off' if self.muted else 'on')}", 1.5)
         if not self.muted:
             self.play("pickup")
+
+    def toggle_quality(self):
+        self.hq = not self.hq
+        self.save_settings()
+        self.say(f"{self.tr('graphics')}: {self.tr('high' if self.hq else 'low')}", 1.5)
+        self.play("pickup")
 
     def set_lang(self, lang):
         self.lang = lang
@@ -4770,6 +4842,10 @@ class Game:
         self.sky = th.get("sky", False)
         self.sun = np.array(th["sun"], F32) / np.linalg.norm(th["sun"]) if th.get("sun") else None
         self.sun_col = np.array(th.get("sun_col", [0, 0, 0]), F32)
+        self.gloss = np.array(GLOSS.get(lv["theme"], [0.3] * 7), F32)
+        self.reflect = np.array(REFLECT.get(lv["theme"], (0.0, 0.0, 0.0)), F32)
+        e = 0.3 / 0.6
+        self.ao_wall_norm = 1.0 / (0.38 + 0.62 * e * (2 - e))
         self.world = World(lv["map"])
         self.enemies, self.items, self.props = [], [], []
         start = (1.5, 1.5)
@@ -4986,7 +5062,7 @@ class Game:
             self.damage_enemy(e, dmg, p.x, p.y)
 
     # ---------------------------------------------------- עדכון
-    def update(self, dt, keys, mouse_dx):
+    def update(self, dt, keys, mouse_dx, mouse_dy=0):
         self.time += dt
         p = self.player
         p.cool = max(0.0, p.cool - dt) if p.cool > 0 else 0.0
@@ -5018,9 +5094,33 @@ class Game:
             turn_t = (keys[pygame.K_RIGHT] - keys[pygame.K_LEFT]) * 2.8
             p.turn += (turn_t - p.turn) * min(1.0, dt * 12)
             p.a = norm_angle(p.a + p.mouse * 0.0024 + p.turn * dt)
+            # הבטה למעלה/למטה (y-shearing) - עכבר או PgUp/PgDn
+            look = (keys[pygame.K_PAGEDOWN] - keys[pygame.K_PAGEUP]) * 160 * dt
+            p.pitch = max(-RH * 0.42, min(RH * 0.42, p.pitch - mouse_dy * 0.32 - look))
+            if keys[pygame.K_END]:
+                p.pitch *= max(0.0, 1 - dt * 10)
+            # קפיצה + כבידה
+            want_jump = keys[pygame.K_j] or pygame.mouse.get_pressed()[2]
+            if want_jump and p.z <= 0.0 and p.vz <= 0.0:
+                p.vz = 2.7
+                self.play("whoosh", 12)
+            if p.z > 0 or p.vz > 0:
+                p.vz -= 9.5 * dt
+                p.z += p.vz * dt
+                if p.z <= 0:
+                    if p.vz < -1.5:
+                        p.land = min(0.12, -p.vz * 0.035)
+                        self.shake = max(self.shake, 0.06)
+                        self.play("stomp", 9)
+                        self.emit(p.x + math.cos(p.a) * 0.4, p.y + math.sin(p.a) * 0.4, 0.02, "smoke", 3, 0.6, 0.6, 0.18, 0.2)
+                    p.z, p.vz = 0.0, 0.0
+            p.land = max(0.0, p.land - dt * 0.6)
+            # נדנוד הנשק בעקבות תנועת העכבר והקפיצה
+            p.sway_x += (max(-38, min(38, -p.mouse * 1.1)) - p.sway_x) * min(1.0, dt * 9)
+            p.sway_y += (max(-30, min(30, mouse_dy * 0.8 - p.vz * 7)) - p.sway_y) * min(1.0, dt * 9)
             run = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
             speed = 3.4 * (1.6 if run else 1.0)
-            if self.theme.get("hazard_slow") and self.world.FT[int(p.y), int(p.x)] == 2:
+            if self.theme.get("hazard_slow") and self.world.FT[int(p.y), int(p.x)] == 2 and p.z < 0.05:
                 speed *= self.theme["hazard_slow"]
             ca, sa = math.cos(p.a), math.sin(p.a)
             mx = my = 0.0
@@ -5056,7 +5156,7 @@ class Game:
             if keys[pygame.K_SPACE] or pygame.mouse.get_pressed()[0]:
                 self.player_fire()
             # חיים מתמלאים לאט כשלא נפגעים כמה שניות
-            p.since_hurt = getattr(p, "since_hurt", 99) + dt
+            p.since_hurt += dt
             if p.since_hurt > EASY["regen_delay"] and p.hp < 100:
                 p.hp = min(100.0, p.hp + EASY["regen"] * dt)
             for it in self.items[:]:
@@ -5074,7 +5174,7 @@ class Game:
                     self.items.remove(it)
                     self.play("pickup")
             th = self.theme
-            if self.world.FT[int(p.y), int(p.x)] == 2:
+            if self.world.FT[int(p.y), int(p.x)] == 2 and p.z < 0.05:     # בקפיצה אפשר לדלג מעל לבה!
                 if th.get("hazard_slow") and random.random() < 0.05 * p.speed_k:
                     self.emit(p.x, p.y, 0.05, "smoke", 1, 0.3, 0.5, 0.15, 0.3)
                 if th.get("hazard_msg") and self.msg_timer <= 0:
@@ -5087,6 +5187,8 @@ class Game:
         else:
             p.moving = False
             p.vx = p.vy = p.speed_k = 0.0
+            p.z, p.vz = 0.0, 0.0
+            p.pitch *= max(0.0, 1 - dt * 3)
 
         for e in self.enemies:
             e.update(dt, self)
@@ -5202,13 +5304,15 @@ class Game:
     def render_world(self):
         p, t = self.player, self.time
         sh = self.shake
+        hq = self.hq
         a = p.a + (random.uniform(-1, 1) * sh * 0.05 if sh else 0)
         self.dirx, self.diry = math.cos(a), math.sin(a)
         self.planex, self.planey = -self.diry * PLANE, self.dirx * PLANE
         self.inv_det = 1.0 / (self.planex * self.diry - self.dirx * self.planey)
         bob = math.sin(p.bob) * 0.022 * p.speed_k
-        self.camz = 0.5 + bob - (0.25 if self.state == "dead" else 0)
-        self.horizon = RH / 2 + (random.uniform(-1, 1) * sh * 14 if sh else 0)
+        H = self.wall_h
+        self.camz = min(H - 0.06, 0.5 + bob + p.z - p.land) - (0.25 if self.state == "dead" else 0)
+        self.horizon = RH / 2 + p.pitch + (random.uniform(-1, 1) * sh * 14 if sh else 0)
         camz, hz = self.camz, self.horizon
 
         rdx = (self.dirx + self.planex * CAMX).astype(F32)
@@ -5223,7 +5327,6 @@ class Game:
         flip = ((side == 0) & (rdx > 0)) | ((side == 1) & (rdy < 0))
         wu = np.clip(np.where(flip, TM - wu, wu), 0, TM)
 
-        H = self.wall_h
         fp = (FOCAL / perp)[:, None]
         top = hz - (H - camz) * fp
         bot = hz + camz * fp
@@ -5252,42 +5355,169 @@ class Game:
             u = np.where(lava, (u + int(t * 9)) & TM, u)
             v = np.where(lava, (v + (7 * np.sin(WX * 2.3 + t * 1.6)).astype(np.int32)) & TM, v)
         tex = self.atlas[sidx, u, v]
-        alb, emi = tex[..., :3], tex[..., 3:]
+        alb, emi = tex[..., :3], tex[..., 3:6]
 
         nwx = np.where(side == 0, -stx, 0).astype(F32)[:, None]
         nwy = np.where(side == 1, -sty, 0).astype(F32)[:, None]
-        NX = np.where(is_wall, nwx, 0).astype(F32)
-        NY = np.where(is_wall, nwy, 0).astype(F32)
+        GNX = np.where(is_wall, nwx, 0).astype(F32)
+        GNY = np.where(is_wall, nwy, 0).astype(F32)
         NZ = np.where(is_floor, 1.0, np.where(is_ceil, -1.0, 0.0)).astype(F32)
+        NX, NY = GNX, GNY
+        if hq:      # נורמלים לכל פיקסל מתוך מפת התבליט - הטקסטורות מקבלות עומק אמיתי מול האור
+            bu, bv = tex[..., 6], tex[..., 7]
+            sgn = np.where(flip, -1.0, 1.0).astype(F32)[:, None]
+            s1 = (side == 1)[:, None]
+            TX = np.where(is_wall, np.where(s1, sgn, 0), 1).astype(F32)
+            TY = np.where(is_wall, np.where(s1, 0, sgn), 0).astype(F32)
+            NX = GNX - bu * TX
+            NY = GNY - bu * TY - np.where(is_wall, 0, bv)
+            NZ = NZ + np.where(is_wall, bv, 0)
+            inv = 1 / np.sqrt(NX * NX + NY * NY + NZ * NZ)
+            NX, NY, NZ = NX * inv, NY * inv, NZ * inv
 
-        L = np.empty((RW, RH, 3), F32)
-        L[:] = self.ambient
+        # --- הצללה סביבתית: פינות, מפגש קיר-רצפה ומפגש קיר-תקרה
+        R = World.AO_RES
+        aw = self.world.AO
+        ox = np.where(is_wall, GNX * 0.3, 0)
+        oy = np.where(is_wall, GNY * 0.3, 0)
+        ai = np.clip(((WY + oy) * R).astype(np.int32), 0, aw.shape[0] - 1)
+        aj = np.clip(((WX + ox) * R).astype(np.int32), 0, aw.shape[1] - 1)
+        ao = aw[ai, aj]
+        ao = np.where(is_wall, np.minimum(1.0, ao * self.ao_wall_norm), ao)
+        if hq:
+            ao = np.where(is_wall, ao * (0.45 + 0.55 * np.sqrt(np.clip(WZ * 2.6, 0, 1))), ao)
+            if not self.sky:
+                ao = np.where(is_wall, ao * (0.6 + 0.4 * np.sqrt(np.clip((H - WZ) * 3.0, 0, 1))), ao)
+        ao3 = ao[..., None]
+
+        Ld = np.zeros((RW, RH, 3), F32)
         if self.sun is not None:
             sx, sy, sz = self.sun
-            L += np.clip(NX * sx + NY * sy + NZ * sz, 0, 1)[..., None] * self.sun_col
-        for lx, ly, lz, col, rad in self.frame_lights:
-            vx = lx - WX
-            vy = ly - WY
-            vz = lz - WZ
+            Ld += np.clip(NX * sx + NY * sy + NZ * sz, 0, 1)[..., None] * self.sun_col
+        spec = None
+        if hq:
+            VX, VY, VZ = p.x - WX, p.y - WY, camz - WZ
+            vi = 1 / np.sqrt(VX * VX + VY * VY + VZ * VZ + 1e-4)
+            VX, VY, VZ = VX * vi, VY * vi, VZ * vi
+            spec = np.zeros((RW, RH, 3), F32)
+        rr2 = rdx * rdx + rdy * rdy
+        for li, (lx, ly, lz, col, rad) in enumerate(self.frame_lights):
+            # רק העמודות שהקרן שלהן עוברת בטווח האור (חוסך הרבה חישוב)
+            sp = np.clip(((lx - p.x) * rdx + (ly - p.y) * rdy) / rr2, 0, perp)
+            ex, ey = p.x + sp * rdx - lx, p.y + sp * rdy - ly
+            hit = np.flatnonzero(ex * ex + ey * ey < rad * rad)
+            if not len(hit):
+                continue
+            c0, c1 = hit[0], hit[-1] + 1
+            sl = slice(c0, c1)
+            nx_, ny_, nz_ = NX[sl], NY[sl], NZ[sl]
+            vx = lx - WX[sl]
+            vy = ly - WY[sl]
+            vz = lz - WZ[sl]
             d = np.sqrt(vx * vx + vy * vy + vz * vz) + 1e-3
-            ndl = (NX * vx + NY * vy + NZ * vz) / d
-            att = np.clip(1 - d * (1.0 / rad), 0, 1)
-            f = np.clip(ndl, 0, 1) * att * att
-            L += f[..., None] * col
-        if self.lightning > 0:
-            L += self.lightning * np.array([1.4, 1.4, 1.7], F32)
+            idd = 1 / d
+            vx, vy, vz = vx * idd, vy * idd, vz * idd
+            ndl = nx_ * vx + ny_ * vy + nz_ * vz
+            att = np.maximum(1 - d * (1.0 / rad), 0)
+            att = att * att
+            Ld[sl] += (np.maximum(ndl, 0) * att)[..., None] * col
+            if hq and li < 3:        # ברק ספקולרי (Blinn-Phong) מהאורות הקרובים
+                hx, hy, hz_ = vx + VX[sl], vy + VY[sl], vz + VZ[sl]
+                nh = np.maximum((nx_ * hx + ny_ * hy + nz_ * hz_) / np.sqrt(hx * hx + hy * hy + hz_ * hz_ + 1e-5), 0)
+                nh = nh * nh
+                nh = nh * nh
+                nh = nh * nh
+                nh = nh * nh
+                spec[sl] += (nh * att * (ndl > 0))[..., None] * col
+        amb = self.ambient + (self.lightning * np.array([1.4, 1.4, 1.7], F32) if self.lightning > 0 else 0)
+        L = amb * ao3 + Ld * (0.55 + 0.45 * ao3)
+
+        # --- צללים רכים על הרצפה מתחת לאויבים, עצמים וחפצים
+        if hq:
+            self.floor_shadows(L, WX, WY, is_floor, hz, rdx, rdy, perp)
         if self.theme.get("caustic"):      # אור מרצד מתחת לים
             c = np.sin(WX * 2.7 + t * 1.6) * np.sin(WY * 2.3 - t * 1.3) + np.sin((WX + WY) * 1.9 + t)
             L += (np.clip(c, 0, 2) * 0.12)[..., None] * np.array([0.3, 0.8, 0.9], F32)
         if self.theme.get("pulse"):        # קירות ניאון פועמים
             emi = emi * (0.7 + 0.45 * np.sin(t * 3 + (WX + WY) * 0.8))[..., None]
         frame = alb * L + emi
+        if spec is not None:
+            gl = self.gloss[sidx][..., None]
+            frame += spec * gl * (0.35 + 0.65 * ao3)
         fog = (1 - np.exp(-D * self.fog_density))[..., None]
         frame = frame * (1 - fog) + self.fog * fog
         if self.sky:     # שמיים רק בשורות שמעל האופק (חוסך חצי מהחישוב)
             rows = int(min(RH, max(1, hz + 1)))
             frame[:, :rows] = np.where(is_ceil[:, :rows, None], self.render_sky(a, hz, t, rows), frame[:, :rows])
+        if hq:
+            self.floor_reflect(frame, bot, ft, is_floor, WX, WY, hz, t)
         return frame
+
+    def floor_shadows(self, L, WX, WY, is_floor, hz, rdx, rdy, perp):
+        r0 = int(max(0, min(RH, hz)))
+        if r0 >= RH:
+            return
+        p = self.player
+        cast = []
+        for e in self.enemies:
+            cast.append((e.x, e.y, e.z, e.radius * (0.9 if e.alive else 1.2), e.height, 0.62))
+        ph = self.theme.get("prop_h", (1.05, 1.1))
+        for x, y, ch, _ in self.props:
+            hgt = ph[0 if ch == "T" else 1]
+            cast.append((x, y, 0.0, 0.18 + 0.12 * min(hgt, 2.0), hgt, 0.5))
+        for x, y, _k in self.items:
+            cast.append((x, y, 0.05, 0.24, 0.3, 0.45))
+        cast = [c for c in cast if (c[0] - p.x) ** 2 + (c[1] - p.y) ** 2 < 15 ** 2]
+        if not cast:
+            return
+        cast.sort(key=lambda c: (c[0] - p.x) ** 2 + (c[1] - p.y) ** 2)
+        shade = np.ones((RW, RH - r0), F32)
+        sun = self.sun
+        rr2 = rdx * rdx + rdy * rdy
+        touched = False
+        for x, y, z, rad, hgt, k in cast[:10]:
+            if sun is not None and sun[2] > 0.1:        # הצל נמתח הרחק מהשמש
+                off = min(1.2, hgt * 0.35 / sun[2])
+                x, y = x - sun[0] * off, y - sun[1] * off
+            r = rad * (1 + z * 0.6)
+            k = k * max(0.0, 1 - z / 1.6)
+            sp = np.clip(((x - p.x) * rdx + (y - p.y) * rdy) / rr2, 0, perp)
+            ex, ey = p.x + sp * rdx - x, p.y + sp * rdy - y
+            hit = np.flatnonzero(ex * ex + ey * ey < r * r)
+            if not len(hit) or k <= 0:
+                continue
+            sl = slice(hit[0], hit[-1] + 1)
+            dx, dy = WX[sl, r0:] - x, WY[sl, r0:] - y
+            f = 1 - (dx * dx + dy * dy) * (1 / (r * r))
+            shade[sl] -= np.maximum(f, 0) * k
+            touched = True
+        if touched:
+            shade = np.where(is_floor[:, r0:], np.maximum(shade, 0.25), 1.0)
+            L[:, r0:] *= shade[..., None]
+
+    def floor_reflect(self, frame, bot, ft, is_floor, WX, WY, hz, t):
+        """השתקפות מישורית של הקירות והשמיים ברצפות רטובות, מים, לבה וקרח."""
+        rf = self.reflect
+        if max(rf) <= 0:
+            return
+        r0 = int(max(0, min(RH, hz)))
+        if r0 >= RH:
+            return
+        fts = ft[:, r0:]
+        R = np.where(is_floor[:, r0:], rf[fts], 0).astype(F32)
+        if not R.any():
+            return
+        ys = YS[:, r0:]
+        yr = 2 * bot - ys
+        if rf[2] > 0:       # אדוות על מים
+            yr = yr + np.where(fts == 2, np.sin(WX[:, r0:] * 5.0 + t * 2.2) * np.sin(WY[:, r0:] * 4.0 - t * 1.7) * 2.2, 0)
+        valid = yr >= 0
+        yi = np.clip(yr.astype(np.int32), 0, RH - 1)
+        refl = frame[COLS, yi]
+        steep = np.clip((ys - hz) / (RH * 0.6), 0, 1)        # פרנל - יותר השתקפות בזווית נמוכה
+        R = R * valid * (1 - 0.6 * steep)
+        region = frame[:, r0:]
+        region += (refl - region) * R[..., None]
 
     def render_sky(self, a, hz, t, rows=RH):
         """שמיים פתוחים: גרדיאנט, עננים בפרספקטיבה, ושמש."""
@@ -5415,9 +5645,14 @@ class Game:
         if self.state == "dead":
             frame = frame * np.array([1.0, 0.35, 0.3], F32)
         out = 1 - np.exp(-frame * 1.35)
-        pygame.surfarray.blit_array(self.low, (np.clip(out, 0, 1) * 255).astype(np.uint8))
+        u8 = (np.clip(out, 0, 1) * 255).astype(np.uint8)
+        if self.hq:      # עקומת ניגודיות עדינה (טבלת חיפוש - מהיר)
+            u8 = GRADE_LUT[u8]
+        pygame.surfarray.blit_array(self.low, u8)
         pygame.transform.scale(self.low, (WIN_W, VIEW_H), self.scaled)
         self.screen.blit(self.scaled, (0, 0))
+        if self.hq:
+            self.screen.blit(self.make_bloom(frame), (0, 0), special_flags=pygame.BLEND_ADD)
         if self.state in ("title", "levels", "options"):
             pygame.draw.rect(self.screen, (8, 6, 6), (0, VIEW_H, WIN_W, HUD_H))
             self.draw_menu()
@@ -5455,6 +5690,40 @@ class Game:
         f = self.f_small.render(f"{fps:.0f} FPS", True, (200, 200, 200))
         self.screen.blit(f, (WIN_W - f.get_width() - 10, 10))
 
+    def make_bloom(self, frame):
+        """זוהר (Bloom): אזורים בהירים - לבה, לפידים, ניאון, קליעים - זורחים החוצה."""
+        b = frame[0::3] + frame[1::3] + frame[2::3]
+        b = (b[:, 0::3] + b[:, 1::3] + b[:, 2::3]) * (1 / 9)
+        b = b[0::2] + b[1::2]
+        b = (b[:, 0::2] + b[:, 1::2]) * 0.25
+        avg = float(b.mean())          # סף מסתגל: בשלבים בהירים (שלג, ממתקים) רק הנקודות הבוהקות זורחות
+        b = np.maximum(b - max(0.55, avg * 2.2), 0)
+        wide = b
+        for it in range(4):
+            for ax in (0, 1):
+                c = wide * 2
+                if ax == 0:
+                    c[1:] += wide[:-1]
+                    c[:-1] += wide[1:]
+                    c[0] += wide[0]
+                    c[-1] += wide[-1]
+                else:
+                    c[:, 1:] += wide[:, :-1]
+                    c[:, :-1] += wide[:, 1:]
+                    c[:, 0] += wide[:, 0]
+                    c[:, -1] += wide[:, -1]
+                wide = c * 0.25
+            if it == 0:
+                tight = wide
+        g = tight * 0.7 + wide * 1.1
+        g = (1 - np.exp(-g * 1.0)) * 255
+        if not hasattr(self, "bloom_low"):
+            self.bloom_low = pygame.Surface((RW // 6, RH // 6))
+            self.bloom_big = pygame.Surface((WIN_W, VIEW_H))
+        pygame.surfarray.blit_array(self.bloom_low, np.clip(g, 0, 255).astype(np.uint8))
+        pygame.transform.smoothscale(self.bloom_low, (WIN_W, VIEW_H), self.bloom_big)
+        return self.bloom_big
+
     def draw_weapon(self):
         p = self.player
         w = WEAPONS[p.weapon]
@@ -5475,8 +5744,8 @@ class Game:
         if p.switch_t > 0:                          # הורדה/הרמה בזמן החלפה
             k = p.switch_t / 0.36
             drop = math.sin(k * math.pi) * 300
-        x = WIN_W // 2 - 180 + bx
-        y = VIEW_H - 300 + by + recoil + drop
+        x = WIN_W // 2 - 180 + bx + p.sway_x
+        y = VIEW_H - 300 + by + recoil + drop + p.sway_y + p.land * 220
         if ft < 0.05 and p.switch_t <= 0:
             fl = self.flashes[w["flash"]]
             mx, my = w["muzzle"][p.barrel % len(w["muzzle"])]
@@ -5812,11 +6081,14 @@ class Game:
                 self.button(r, LANG_NAMES[lg], lang_now == lg, self.f_mid)
                 self.lang = lang_now
                 self.buttons.append((r, ("lang", lg)))
-            self.text(self.tr("sound"), self.f_mid, (240, 230, 220), WIN_W // 2, 295)
-            r = pygame.Rect(WIN_W // 2 - 140, 340, 280, 70)
+            self.text(self.tr("sound"), self.f_mid, (240, 230, 220), WIN_W // 2, 272)
+            r = pygame.Rect(WIN_W // 2 - 160, 312, 320, 64)
             on = not self.muted
             self.button(r, f"{self.tr('sound')}: {self.tr('on' if on else 'off')}", on, self.f_mid)
             self.buttons.append((r, "mute"))
+            r = pygame.Rect(WIN_W // 2 - 160, 392, 320, 64)
+            self.button(r, f"{self.tr('graphics')}: {self.tr('high' if self.hq else 'low')}", self.hq, self.f_mid)
+            self.buttons.append((r, "quality"))
             r = pygame.Rect(WIN_W // 2 - 110, WIN_H - 130, 220, 60)
             self.button(r, self.tr("back"), False, self.f_mid)
             self.buttons.append((r, "back"))
@@ -5881,6 +6153,9 @@ class Game:
         if act == "mute":
             self.toggle_mute()
             return None
+        if act == "quality":
+            self.toggle_quality()
+            return None
         if isinstance(act, tuple) and act[0] == "page":
             per = 8
             pages = (len(LEVELS) + per - 1) // per
@@ -5905,6 +6180,9 @@ class Game:
     def menu_key(self, key):
         if key == pygame.K_m:
             self.toggle_mute()
+            return None
+        if key == pygame.K_g:
+            self.toggle_quality()
             return None
         if self.state == "title":
             if key in (pygame.K_UP, pygame.K_w):
@@ -6017,6 +6295,8 @@ def main(max_frames=None, auto=False):
                     game.show_map = not game.show_map
                 elif ev.key == pygame.K_m:
                     game.toggle_mute()
+                elif ev.key == pygame.K_g:
+                    game.toggle_quality()
                 elif ev.key in (pygame.K_1, pygame.K_2, pygame.K_3):
                     game.switch_weapon(ev.key - pygame.K_1)
                 elif ev.key in (pygame.K_q, pygame.K_e):
@@ -6030,8 +6310,8 @@ def main(max_frames=None, auto=False):
                     menu_mode()
             elif ev.type == pygame.MOUSEWHEEL and not in_menu:
                 game.switch_weapon(game.player.next_weapon - (1 if ev.y > 0 else -1))
-        mdx = pygame.mouse.get_rel()[0] if pygame.event.get_grab() else 0
-        game.update(dt, pygame.key.get_pressed(), mdx)
+        mdx, mdy = pygame.mouse.get_rel() if pygame.event.get_grab() else (0, 0)
+        game.update(dt, pygame.key.get_pressed(), mdx, mdy)
         game.draw(clock.get_fps())
         pygame.display.flip()
         frame += 1

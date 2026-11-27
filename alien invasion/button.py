@@ -1,33 +1,27 @@
-import pygame.font
+import pygame
 
 
 class Button:
-    def __init__(self, ai_game, msg):
-        """Initialize button attributes."""
+    """The Play button, drawn in the middle of the playfield."""
+
+    def __init__(self, ai_game, text_key='play'):
         self.screen = ai_game.screen
-        self.screen_rect = self.screen.get_rect()
+        self.lang = ai_game.lang
+        self.text_key = text_key
 
-        # Set the dimensions and properties of the button
-        self.width, self.height = 200, 50
-        self.button_color = (255, 215, 0)
+        self.width, self.height = 220, 62
+        self.button_color = (92, 72, 190)
+        self.border_color = (170, 160, 240)
         self.text_color = (255, 255, 255)
-        self.font = pygame.font.SysFont(None, 48)
 
-        # Build the button's rect object and center it
         self.rect = pygame.Rect(0, 0, self.width, self.height)
-        self.rect.center = self.screen_rect.center
-
-        # The button message needs to be prepped only once
-        self._prep_msg(msg)
-
-    def _prep_msg(self, msg):
-        """Turn msg into a rendered image and center the text on the button."""
-        self.msg_image = self.font.render(
-            msg, True, self.text_color, self.button_color)
-        self.msg_image_rect = self.msg_image.get_rect()
-        self.msg_image_rect.center = self.rect.center
+        self.rect.center = ai_game.camera.view_rect.center
 
     def draw_button(self):
-        """Draw a blank button and then draw the message."""
-        self.screen.fill(self.button_color, self.rect)
-        self.screen.blit(self.msg_image, self.msg_image_rect)
+        pygame.draw.rect(self.screen, self.button_color, self.rect,
+                         border_radius=12)
+        pygame.draw.rect(self.screen, self.border_color, self.rect, 2,
+                         border_radius=12)
+        font = self.lang.font(34)
+        image = font.render(self.lang.ts(self.text_key), True, self.text_color)
+        self.screen.blit(image, image.get_rect(center=self.rect.center))

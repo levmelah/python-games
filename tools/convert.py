@@ -40,6 +40,19 @@ except Exception as _pgb_err:
 
 AWAIT_COMMENT = "  # pygbag: מחזיר שליטה לדפדפן בכל פריים"
 
+# מודולים של הספרייה התקנית שחסרים ב-python של pygbag. ייבוא רגיל שלהם זורק
+# ModuleNotFoundError, ואז pygbag מנסה להוריד חבילה בשם הזה מ-PyPI ונתקע שם
+# לנצח (למשל "wave" ב-PyPI גורר את MySQL-python) - והמשחק לא עולה בכלל.
+# כולם בשימוש אופציונלי בלבד (מטמון קבצים), ולכן None הוא תחליף טוב.
+MISSING_STDLIB = ("wave",)
+
+# חבילות שאינן בפייתון של pygbag ושאנחנו אורזים בעצמנו (tools/vendor).
+# pygbag סורק את main.py לפני ההרצה; אם הוא רואה שם ייבוא של חבילה חסרה הוא
+# מוריד ומתקין אותה מ-PyPI בזמן ריצה, וההתקנה הזו הורסת את מנהל הווידאו של
+# SDL - כל set_mode שאחריה זורק "The video driver did not add any displays"
+# והמשחק לא עולה. לכן הופכים את הייבוא ל-__import__ דינמי, שהסורק לא רואה.
+VENDORED = ("bidi",)
+
 
 class Bail(Exception):
     pass
@@ -134,6 +147,7 @@ class Converter:
         self.line_subs = []    # (lineno, regex, repl)
         self.inserts = []      # (after_lineno, text)
         self.run_line = None   # השורה שבה asyncio.run
+        self.vendored = False  # האם יש ייבוא של חבילה ארוזה
 
     # --- עזרה ---
     def indent_of(self, lineno):
@@ -159,7 +173,52 @@ class Converter:
                  if not any(L is not M and L in list(ast.walk(M)) for M in loops)]
         if not outer:
             raise Bail("לא נמצאה לולאת משחק (pygame.event.get)")
+        # אם הלולאה החיצונית היא "for event in pygame.event.get()" עצמה,
+        # אז בפריים בלי אף אירוע הגוף שלה לא רץ - ושום await לא מתבצע.
+        # הדפדפן נתקע. צריך למצוא גם את לולאת הפריימים שקוראת לה.
+        for L in list(outer):
+            if isinstance(L, ast.For) and is_event_get(L.iter):
+                for D in self.driver_loops(L):
+                    if all(D is not M for M in outer):
+                        outer.append(D)
         return outer
+
+    def driver_loops(self, L):
+        """לולאת/ות הפריימים שמריצה את הפונקציה שבה יושבת לולאת האירועים."""
+        fn = self.enclosing_func(L)
+        if fn is None:
+            return []
+        reached = {self.func_of[fn]}
+        all_loops = [n for n in ast.walk(self.tree)
+                     if isinstance(n, (ast.While, ast.For))]
+        for _ in range(len(self.funcs) + 1):
+            found = []
+            for M in all_loops:
+                if M is L or L in list(ast.walk(M)):
+                    continue
+                host = self.enclosing_func(M)
+                for c in ast.walk(M):
+                    if (isinstance(c, ast.Call)
+                            and self.resolve_call(c, host) in reached):
+                        found.append(M)
+                        break
+            if found:
+                return [M for M in found
+                        if not any(M is not K and M in list(ast.walk(K))
+                                   for K in found)]
+            grew = set()
+            for key, f2 in self.funcs.items():
+                if key in reached:
+                    continue
+                for c in ast.walk(f2):
+                    if (isinstance(c, ast.Call)
+                            and self.resolve_call(c, f2) in reached):
+                        grew.add(key)
+                        break
+            if not grew:
+                return []
+            reached |= grew
+        return []
 
     # --- שלב 2: אילו פונקציות צריכות להיות async ---
     def resolve_call(self, call, in_func):
@@ -264,6 +323,48 @@ class Converter:
         # תרוץ לפני שהמשחק בכלל התחיל - למשל pygame.quit() שסוגר את החלון.
         self.neutralize_after_run()
 
+        # 2d-ter. ייבוא מודולים שחסרים ב-pygbag - בתוך try, אחרת הטעינה נתקעת
+        for n in self.tree.body:
+            if not isinstance(n, ast.Import) or len(n.names) != 1:
+                continue
+            a = n.names[0]
+            if a.name not in MISSING_STDLIB or a.asname:
+                continue
+            if not re.match(r"\s*import\s+%s\s*(#.*)?$" % a.name,
+                            self.lines[n.lineno - 1]):
+                continue
+            self.line_subs.append(
+                (n.lineno, r"^.*$",
+                 lambda m, name=a.name:
+                     "try:\n    import %s  # pygbag\n"
+                     "except ImportError:  # pygbag: חסר בדפדפן, ולא קריטי\n"
+                     "    %s = None" % (name, name)))
+
+        # 2d-quater. ייבוא חבילות שאנחנו אורזים - דינמי, כדי ש-pygbag לא יתקין
+        for n in ast.walk(self.tree):
+            if isinstance(n, ast.ImportFrom) and n.level == 0 and n.module:
+                if n.module.split(".")[0] not in VENDORED:
+                    continue
+                names = [(a.name, a.asname or a.name) for a in n.names]
+                repl = "; ".join(
+                    '%s = __import__("%s", fromlist=["%s"]).%s'
+                    % (as_, n.module, nm, nm) for nm, as_ in names)
+            elif isinstance(n, ast.Import):
+                if any(a.name.split(".")[0] not in VENDORED for a in n.names):
+                    continue
+                repl = "; ".join(
+                    '%s = __import__("%s")' % (a.asname or a.name.split(".")[0],
+                                               a.name)
+                    for a in n.names)
+            else:
+                continue
+            ind = self.indent_of(n.lineno)
+            if n.lineno != n.end_lineno:
+                raise Bail("ייבוא של %s פרוס על כמה שורות" % VENDORED[0])
+            self.line_subs.append((n.lineno, r"^.*$",
+                                   lambda m, t=ind + repl: t))
+            self.vendored = True
+
         # 2e. גופן חלופי
         host = None
         for n in self.tree.body:
@@ -334,9 +435,11 @@ class Converter:
 
 
 def convert(src, dst):
-    res = Converter(src).run()
+    conv = Converter(src)
+    res = conv.run()
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     open(dst, "w", encoding="utf-8").write(res)
+    return conv.vendored
 
 
 if __name__ == "__main__":

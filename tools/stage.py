@@ -8,6 +8,20 @@ S = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, S)
 import convert as C
 
+VENDOR = os.path.join(S, "vendor")
+
+
+def copy_vendor(dest):
+    """מעתיק לתוך המשחק את החבילות שאנחנו אורזים (bidi + six)."""
+    for name in ("bidi", "six.py"):
+        src = os.path.join(VENDOR, name)
+        dst = os.path.join(dest, name)
+        if os.path.isdir(src):
+            shutil.copytree(src, dst,
+                            ignore=shutil.ignore_patterns("__pycache__"))
+        else:
+            shutil.copy2(src, dst)
+
 rows = list(csv.reader(open(os.path.join(S, "manifest.tsv"), encoding="utf-8"),
                        delimiter="\t"))
 # ארגומנט אחד = רק המשחק הזה
@@ -23,10 +37,13 @@ for src, slug, title, assets in rows:
         shutil.rmtree(dest)
     os.makedirs(dest)
     try:
-        C.convert(os.path.join(ROOT, src), os.path.join(dest, "main.py"))
+        vendored = C.convert(os.path.join(ROOT, src),
+                             os.path.join(dest, "main.py"))
     except Exception as e:
         bad.append((slug, "%s: %s" % (type(e).__name__, e)))
         continue
+    if vendored:
+        copy_vendor(dest)
     for spec in filter(None, assets.split(";")):
         a_src, a_dst = spec.split(">")
         s_path = os.path.join(ROOT, a_src)
